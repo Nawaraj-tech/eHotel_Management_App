@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "610695883923",
+    "project_id": "ehotelmanagerappfirebase",
+    "storage_bucket": "ehotelmanagerappfirebase.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:610695883923:android:e9864e1d735ecce7727166",
+        "android_client_info": {
+          "package_name": "com.example.ehotelmanagementapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBKapvKoVIZwfiZMokThsQ4lSw6jFsVM10"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
