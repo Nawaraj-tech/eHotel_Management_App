@@ -1,5 +1,6 @@
 package com.example.ehotelmanagementapp.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ehotelmanagementapp.model.UserRole
@@ -30,7 +31,7 @@ class AuthViewModel @Inject constructor(
     val authState: StateFlow<AuthState> = _authState
 
     init {
-        // Check if user is already signed in
+        // Check current auth state when ViewModel is created
         auth.currentUser?.let { user ->
             checkUserRole(user.uid)
         }
@@ -43,12 +44,13 @@ class AuthViewModel @Inject constructor(
                     .document(userId)
                     .get()
                     .await()
-                val role = userDoc.getString("role")?.let {
-                    UserRole.valueOf(it)
-                } ?: UserRole.CUSTOMER
+                val roleString = userDoc.getString("role") ?: UserRole.CUSTOMER.name
+                val role = UserRole.valueOf(roleString)
+                Log.d("AuthViewModel", "User role found: $role")
                 _authState.value = AuthState.Success(userId, role)
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.message ?: "Failed to fetch user role")
+                Log.d("AuthViewModel", "Error checking user role", e)
+                _authState.value = AuthState.Error(e.message ?: "Failed to get user role")
 
             }
         }
@@ -56,35 +58,50 @@ class AuthViewModel @Inject constructor(
 
     fun login(email: String, password: String) {
 
-        when {
-            !ValidationUtils.isValidEmail(email) -> {
-                _authState.value = AuthState.Error("Invalid Email format")
-                return
-            }
+        /*  when {
+              !ValidationUtils.isValidEmail(email) -> {
+                  _authState.value = AuthState.Error("Invalid Email format")
+                  return
+              }
 
-            password.isEmpty() -> {
-                _authState.value = AuthState.Error("Password cannot be empty")
-                return
-            }
-        }
+              password.isEmpty() -> {
+                  _authState.value = AuthState.Error("Password cannot be empty")
+                  return
+              }
+          }*/
         viewModelScope.launch {
             try {
                 _authState.value = AuthState.Loading
+                Log.d("AuthViewModel", "Attempting login with email: $email")
                 val result = auth.signInWithEmailAndPassword(email, password).await()
                 result.user?.let { user ->
                     checkUserRole(user.uid)
+                    /* Log.d("AuthViewModel", "Login successful, fetching user role")
+                     // Fetch the user from firestore
+                     val userDoc = firestore.collection("users")
+                         .document(user.uid)
+                         .get()
+                         .await()
+                     val roleString = userDoc.getString("role") ?: UserRole.CUSTOMER.name
+                     val role = UserRole.valueOf(roleString)
+
+                     Log.d("AuthViewModel", "User role fetched : $role")
+                     _authState.value = AuthState.Success(user.uid, role)*/
+
                 } ?: run {
-                    _authState.value = AuthState.Error("Login failed")
+                    Log.d("AuthViewModel", "Login successful but user is null")
+                    _authState.value = AuthState.Error("Login failed : User is null")
                 }
             } catch (e: Exception) {
-                val errorMessage = when (e.message) {
-                    "ERROR_WRONG_PASSWORD" -> "Incorrect password"
-                    "ERROR_USER_NOT_FOUND" -> "No account found with this email"
-                    "ERROR_USER_DISABLED" -> "This account has been disabled"
-                    "ERROR_TOO_MANY_REQUESTS" -> "Too many attempts. Please try again later"
-                    else -> "Login failed: ${e.message}"
-                }
-                _authState.value = AuthState.Error(errorMessage)
+//                val errorMessage = when (e.message) {
+////                    "ERROR_WRONG_PASSWORD" -> "Incorrect password"
+////                    "ERROR_USER_NOT_FOUND" -> "No account found with this email"
+////                    "ERROR_USER_DISABLED" -> "This account has been disabled"
+////                    "ERROR_TOO_MANY_REQUESTS" -> "Too many attempts. Please try again later"
+//                    else -> "Login failed: ${e.message}"
+//                }
+                Log.e("AuthViewModel", "Login error", e)
+                _authState.value = AuthState.Error(e.message ?: "login failed")
             }
         }
     }
@@ -149,6 +166,16 @@ class AuthViewModel @Inject constructor(
     fun signOut() {
         auth.signOut()
         _authState.value = AuthState.Initial
+    }
+
+    fun getCurrentAuthState() {
+        auth.currentUser?.let { user ->
+            if (_authState.value !is AuthState.Success) {
+                checkUserRole(user.uid)
+            }
+        }?: run {
+            _authState.value = AuthState.Initial
+        }
     }
 
     fun resetPassword(email: String) {

@@ -1,10 +1,13 @@
 package com.example.ehotelmanagementapp.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,6 +19,7 @@ import androidx.navigation.NavController
 import com.example.ehotelmanagementapp.model.RoomStatus
 import com.example.ehotelmanagementapp.navigation.Screen
 import com.example.ehotelmanagementapp.ui.components.RoomsList
+import com.example.ehotelmanagementapp.viewmodel.AuthState
 import com.example.ehotelmanagementapp.viewmodel.AuthViewModel
 import com.example.ehotelmanagementapp.viewmodel.RoomState
 import com.example.ehotelmanagementapp.viewmodel.RoomViewModel
@@ -27,47 +31,77 @@ fun CustomerHomeScreen(
     viewModel: RoomViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
+
+    Log.d("CustomerHomeScreen", "CustomerHomeScreen Composition started")
+
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val roomsState by viewModel.roomsState.collectAsState()
+    val authState by authViewModel.authState.collectAsState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Customer Dashboard") },
-                actions = {
-                    authViewModel.signOut()
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
+    // Check auth state when screen is first composed
+    LaunchedEffect(Unit) {
+        Log.d("CustomerHomeScreen", "Checking current auth state")
+        authViewModel.getCurrentAuthState()
+    }
 
+
+    // Monitor auth state changes
+
+    LaunchedEffect(authState) {
+        when (authState) {
+          /*  AuthState.Initial -> {
+                Log.d("CustomerHomeScreen", "Auth state is Initial , navigation to login")
+                navController.navigate(Screen.Login.route) {
+                    popUpTo(0) { inclusive = true }
                 }
-            ) {
-                Icon(Icons.Default.Logout, contentDescription = "LogOut")
+            }*/
+
+            is AuthState.Error -> {
+                Log.d("CustomerHomeScreen", "Auth state is Error, navigating to login")
+                navController.navigate(Screen.Login.route) {
+                    popUpTo(0) { inclusive = true }
+                }
             }
-        },
-        bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    selected = selectedTabIndex == 0,
-                    onClick = { selectedTabIndex = 0 },
-                    icon = { Icon(Icons.Default.Home, "Rooms") },
-                    label = { Text("Rooms") }
-                )
-                NavigationBarItem(
-                    selected = selectedTabIndex == 1,
-                    onClick = { selectedTabIndex = 1 },
-                    icon = { Icon(Icons.Default.DateRange, "Bookings") },
-                    label = { Text("My Bookings") }
-                )
-                NavigationBarItem(
-                    selected = selectedTabIndex == 2,
-                    onClick = { selectedTabIndex = 2 },
-                    icon = { Icon(Icons.Default.Message, "Complaints") },
-                    label = { Text("Complaints") }
-                )
+
+            is AuthState.Success -> {
+                // Stay on current Screen
+                Log.d("CustomerHomeScreen", "Auth state is Success, staying on screen")
+
             }
+
+            else -> {}
         }
-    ) { padding ->
+    }
+
+    Scaffold(topBar = {
+        TopAppBar(title = { Text("Customer Dashboard") }, actions = {
+            IconButton(onClick = {
+                authViewModel.signOut()
+                navController.navigate(Screen.Login.route) {
+                    popUpTo(0) { inclusive = true }
+                }
+            }) {
+                Icon(Icons.Default.ExitToApp, contentDescription = "logout")
+            }
+
+
+        })
+    }, bottomBar = {
+        NavigationBar {
+            NavigationBarItem(selected = selectedTabIndex == 0,
+                onClick = { selectedTabIndex = 0 },
+                icon = { Icon(Icons.Default.Home, "Rooms") },
+                label = { Text("Rooms") })
+            NavigationBarItem(selected = selectedTabIndex == 1,
+                onClick = { selectedTabIndex = 1 },
+                icon = { Icon(Icons.Default.DateRange, "Bookings") },
+                label = { Text("My Bookings") })
+            NavigationBarItem(selected = selectedTabIndex == 2,
+                onClick = { selectedTabIndex = 2 },
+                icon = { Icon(Icons.Default.Email, "Complaints") },
+                label = { Text("Complaints") })
+        }
+    }) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -90,12 +124,9 @@ fun CustomerHomeScreen(
                             val availableRooms = state.rooms.filter {
                                 it.status == RoomStatus.AVAILABLE
                             }
-                            RoomsList(
-                                rooms = availableRooms,
-                                onBookingClick = { roomId ->
-                                    navController.navigate("booking/$roomId")
-                                }
-                            )
+                            RoomsList(rooms = availableRooms, onBookingClick = { roomId ->
+                                navController.navigate("booking/$roomId")
+                            })
                         }
 
                         is RoomState.Error -> {
@@ -111,22 +142,30 @@ fun CustomerHomeScreen(
 
                 1 -> {
                     // Bookings Tab
-                    Text(
-                        text = "My Bookings",
-                        style = MaterialTheme.typography.headlineMedium,
-                        modifier = Modifier.padding(16.dp)
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "My Bookings",
+                            style = MaterialTheme.typography.headlineMedium,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
+
                     // TODo : Add BookingList Component
 
                 }
 
                 2 -> {
-                    Text(
-                        "My Complaints",
-                        style = MaterialTheme.typography.headlineMedium,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                    // TODO : Add Complaintslist component
+                    Box(
+                        modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "My Complaints",
+                            style = MaterialTheme.typography.headlineMedium,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
                 }
 
             }

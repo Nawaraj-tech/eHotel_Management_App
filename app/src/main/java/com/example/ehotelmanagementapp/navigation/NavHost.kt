@@ -5,9 +5,12 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.ehotelmanagementapp.ui.screens.CustomerHomeScreen
+import com.example.ehotelmanagementapp.ui.screens.GuestHomeScreen
 import com.example.ehotelmanagementapp.ui.screens.LoginScreen
 import com.example.ehotelmanagementapp.ui.screens.RegisterScreen
 import com.example.ehotelmanagementapp.ui.screens.SplashScreen
+import com.example.ehotelmanagementapp.ui.screens.StaffHomeScreen
 
 @Composable
 fun AppNavigation(
@@ -24,6 +27,7 @@ fun AppNavigation(
             SplashScreen(navController)
         }
         composable(Screen.Login.route) {
+            Log.d("AppNavigation", "navigationg to login Screen")
             LoginScreen(navController)
         }
         composable(Screen.Register.route) {
@@ -31,18 +35,21 @@ fun AppNavigation(
         }
 
         // Guest flows
-        /* composable(Screen.GuestHome.route) {
+         composable(Screen.GuestHome.route) {
             GuestHomeScreen(navController)
         }
-        composable(Screen.RoomList.route) {
+       /* composable(Screen.RoomList.route) {
             RoomListScreen(navController)
-        }
+        }*/
 
         // Customer flows
         composable(Screen.CustomerHome.route) {
             CustomerHomeScreen(navController)
         }
-        composable(Screen.BookingHistory.route) {
+        composable(Screen.StaffHome.route) {
+            StaffHomeScreen(navController)
+        }
+        /*composable(Screen.BookingHistory.route) {
             BookingHistoryScreen(navController)
         }
         composable(Screen.ComplaintsList.route) {
@@ -52,7 +59,7 @@ fun AppNavigation(
             CreateComplaintScreen(navController)
         }
 
-        // Staff flows
+         Staff flows
         composable(Screen.StaffHome.route) {
             StaffHomeScreen(navController)
         }

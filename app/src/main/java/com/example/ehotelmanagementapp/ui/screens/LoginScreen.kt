@@ -1,5 +1,6 @@
 package com.example.ehotelmanagementapp.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -34,7 +35,9 @@ fun LoginScreen(
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Success -> {
-                when ((authState as AuthState.Success).role) {
+                val role = (authState as AuthState.Success).role
+                Log.d("LoginScreen", "Login success, role = $role")
+                when (role) {
                     UserRole.STAFF -> navController.navigate(Screen.StaffHome.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
@@ -43,8 +46,13 @@ fun LoginScreen(
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
 
-                    else -> {} // Handle other roles if needed
+                    else -> {
+                        Log.e("LoginScreen", "Unknown role :$role")
+                    } // Handle other roles if needed
                 }
+            }
+            is AuthState.Error -> {
+                Log.e("LoginScreen", "Login error : ${(authState as AuthState.Error).message}")
             }
 
             else -> {}
@@ -97,11 +105,8 @@ fun LoginScreen(
             AuthButton(
                 text = "Login",
                 onClick = {
-                    emailError = !ValidationUtils.isValidEmail(email)
-                    passwordError = password.isEmpty()
-                    if (!emailError && !passwordError) {
-                        viewModel.login(email, password)
-                    }
+                    Log.d("LoginScreen", "Login button clicked")
+                    viewModel.login(email,password)
                 },
                 isLoading = authState is AuthState.Loading,
                 modifier = Modifier.fillMaxWidth()
@@ -110,18 +115,6 @@ fun LoginScreen(
                 onClick = { navController.navigate(Screen.Register.route) }
             ) {
                 Text("Don't Have an account? Register")
-            }
-            TextButton(
-                onClick =
-                {
-                    if (ValidationUtils.isValidEmail(email)) {
-                        viewModel.resetPassword(email)
-                    } else {
-                        emailError = true
-                    }
-                }
-            ) {
-                Text("Forget Password?")
             }
         }
     }

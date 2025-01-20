@@ -1,5 +1,6 @@
 package com.example.ehotelmanagementapp.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ehotelmanagementapp.model.Room
@@ -45,6 +46,7 @@ class RoomViewModel @Inject constructor(
         }
     }
 
+
     fun updateRoomStatus(roomId: String, status: RoomStatus) {
         viewModelScope.launch {
             try {
@@ -68,6 +70,20 @@ class RoomViewModel @Inject constructor(
                 loadRooms()
             } catch (e: Exception) {
                 _roomsState.value = RoomState.Error(e.message ?: "Failed to add room")
+            }
+        }
+    }
+    fun deleteRoom(roomId: String) {
+        viewModelScope.launch {
+            try {
+                firestore.collection("rooms")
+                    .document(roomId)
+                    .delete()
+                    .await()
+                loadRooms()
+            } catch (e: Exception) {
+                Log.e("RoomViewModel", "Error deleting room", e)
+                _roomsState.value = RoomState.Error(e.message ?: "Failed to delete room")
             }
         }
     }
