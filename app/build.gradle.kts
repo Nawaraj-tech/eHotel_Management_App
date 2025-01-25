@@ -79,6 +79,8 @@ dependencies {
 
     // Dependency Injection
     implementation("com.google.dagger:hilt-android:2.50")
+    implementation("com.google.ar.sceneform:filament-android:1.17.1")
+    implementation("androidx.datastore:datastore-core-android:1.1.2")
     kapt("com.google.dagger:hilt-android-compiler:2.50")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 

@@ -1,5 +1,6 @@
 package com.example.ehotelmanagementapp.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -8,6 +9,10 @@ import androidx.compose.ui.unit.dp
 import com.example.ehotelmanagementapp.model.Room
 import com.example.ehotelmanagementapp.model.RoomType
 import com.example.ehotelmanagementapp.model.RoomStatus
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddRoomDialog(
@@ -18,6 +23,7 @@ fun AddRoomDialog(
     var selectedType by remember { mutableStateOf(RoomType.STANDARD) }
     var price by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+    var isRoomTypeExpanded by remember { mutableStateOf(false) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Add New Room") },
@@ -35,28 +41,54 @@ fun AddRoomDialog(
                     label = { Text("Room Number") },
                     modifier = Modifier.fillMaxWidth()
                 )
-                // Room Type
-                ExposedDropdownMenuBox(
-                    expanded = false,
-                    onExpandedChange = { }
-                ) {
+                // Room Type Dropdown
+                Box {
                     OutlinedTextField(
-                        value = selectedType.name,
+                        value = when(selectedType) {
+                            RoomType.STANDARD -> "Standard Room"
+                            RoomType.DELUXE -> "Deluxe Room"
+                            RoomType.SUITE -> "Suite Room"
+                        },
                         onValueChange = { },
                         readOnly = true,
                         label = { Text("Room Type") },
-                        modifier = Modifier.menuAnchor()
-                    )
-                    DropdownMenu(
-                        expanded = false,
-                        onDismissRequest = { }
-                    ) {
-                        RoomType.values().forEach { type ->
-                            DropdownMenuItem(
-                                text = { Text(type.name) },
-                                onClick = { selectedType = type }
+                        modifier = Modifier.fillMaxWidth(),
+                        trailingIcon = {
+                            Icon(
+                               imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Select Room Type",
+                                modifier = Modifier.clickable {
+                                    isRoomTypeExpanded = !isRoomTypeExpanded
+                                }
                             )
                         }
+                    )
+                    DropdownMenu(
+                        expanded = isRoomTypeExpanded,
+                        onDismissRequest = { isRoomTypeExpanded = false },
+                        modifier = Modifier.fillMaxWidth(0.9f)
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Standard Room") },
+                            onClick = {
+                                selectedType = RoomType.STANDARD
+                                isRoomTypeExpanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Deluxe Room") },
+                            onClick = {
+                                selectedType = RoomType.DELUXE
+                                isRoomTypeExpanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Suite Room") },
+                            onClick = {
+                                selectedType = RoomType.SUITE
+                                isRoomTypeExpanded = false
+                            }
+                        )
                     }
                 }
                 // Price

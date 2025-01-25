@@ -1,5 +1,6 @@
 package com.example.ehotelmanagementapp.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,6 +12,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
@@ -22,10 +24,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.ehotelmanagementapp.model.Room
 import com.example.ehotelmanagementapp.model.RoomStatus
+import com.example.ehotelmanagementapp.model.RoomType
 import com.example.ehotelmanagementapp.navigation.Screen
 import com.example.ehotelmanagementapp.ui.components.AddRoomDialog
 import com.example.ehotelmanagementapp.ui.components.RoomCard
-import com.example.ehotelmanagementapp.ui.components.RoomsList
 import com.example.ehotelmanagementapp.viewmodel.AuthViewModel
 import com.example.ehotelmanagementapp.viewmodel.RoomState
 import com.example.ehotelmanagementapp.viewmodel.RoomViewModel
@@ -41,7 +43,7 @@ fun StaffHomeScreen(
     val roomsState by roomViewModel.roomsState.collectAsState()
     var showAddRoomDialog by remember { mutableStateOf(false) }
     // Status update dialog state
-    var selectedRoom by remember { mutableStateOf<Room?>(null) }
+    var selectedRoomForStatus by remember { mutableStateOf<Room?>(null) }
     var showStatusDialog by remember { mutableStateOf(false) }
     Scaffold(topBar = {
         TopAppBar(title = { Text("Staff Dashboard") }, actions = {
@@ -54,7 +56,8 @@ fun StaffHomeScreen(
                 Icon(Icons.Default.ExitToApp, "Logout")
             }
         })
-    }, bottomBar = {
+    },
+        bottomBar = {
         NavigationBar {
             NavigationBarItem(selected = selectedTabIndex == 0,
                 onClick = { selectedTabIndex = 0 },
@@ -66,7 +69,7 @@ fun StaffHomeScreen(
                 label = { Text("Bookings") })
             NavigationBarItem(selected = selectedTabIndex == 2,
                 onClick = { selectedTabIndex = 2 },
-                icon = { Icon(Icons.Default.Call, "Complaints") },
+                icon = { Icon(Icons.Default.Email, "Complaints") },
                 label = { Text("Complaints") })
         }
     }, floatingActionButton = {
@@ -97,16 +100,79 @@ fun StaffHomeScreen(
                         is RoomState.Success -> {
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                items(state.rooms) { room ->
-                                    RoomCard(
-                                        room = room,
-                                        onStatusChange = { selectedRoom = room },
-                                        isStaffView = true
-                                    )
+                                contentPadding = PaddingValues(16.dp)
+
+                            ) {items(state.rooms) { room ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp),
+                                    elevation = CardDefaults.cardElevation(4.dp)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(16.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            // Room Info
+                                            Column {
+                                                Text(
+                                                    text = "Room ${room.number}",
+                                                    style = MaterialTheme.typography.titleLarge
+                                                )
+                                                Text(
+                                                    text = when(room.type) {
+                                                        RoomType.STANDARD -> "Single Room"
+                                                        RoomType.DELUXE -> "Deluxe Room"
+                                                        RoomType.SUITE -> "Suite Room"
+                                                    },
+                                                    style = MaterialTheme.typography.bodyLarge
+                                                )
+                                                Text(
+                                                    text = "£%.2f/night".format(room.pricePerNight),
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.padding(top = 4.dp)
+                                                )
+                                            }
+                                            // Status Chip
+                                            ElevatedFilterChip(
+                                                selected = true,
+                                                onClick = { },
+                                                label = { Text(room.status.name) },
+                                                colors = FilterChipDefaults.elevatedFilterChipColors(
+                                                    selectedContainerColor = when (room.status) {
+                                                        RoomStatus.AVAILABLE -> MaterialTheme.colorScheme.primaryContainer
+                                                        RoomStatus.OCCUPIED -> MaterialTheme.colorScheme.errorContainer
+                                                        RoomStatus.CLEANING -> MaterialTheme.colorScheme.tertiaryContainer
+                                                        RoomStatus.DO_NOT_DISTURB -> MaterialTheme.colorScheme.errorContainer
+                                                    }
+                                                )
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.height(16.dp))
+
+                                        // Update Status Button
+                                        Button(
+                                            onClick = { selectedRoomForStatus = room },
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text("Update Status")
+                                        }
+                                    }
                                 }
+                            }
+//                                items(state.rooms) { room ->
+//                                    RoomCard(
+//                                        room = room,
+//                                        onStatusChange = { selectedRoom = room },
+//                                        isStaffView = true,
+//                                    )
+//                                }
                             }
                         }
 
@@ -147,31 +213,36 @@ fun StaffHomeScreen(
         })
     }
     // Status Update Dialog
-    selectedRoom?.let { room ->
-        AlertDialog(onDismissRequest = { selectedRoom = null },
-            title = { Text("Update Room Status") },
+    selectedRoomForStatus?.let { room ->
+        AlertDialog(
+            onDismissRequest = { selectedRoomForStatus = null },
+            title = { Text("Update Room ${room.number} Status") },
             text = {
                 Column {
-                    RoomStatus.values().forEach { status ->
+                    RoomStatus.entries.forEach { status ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .clickable {
+                                    roomViewModel.updateRoomStatus(room.id, status)
+                                }
                                 .padding(vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            RadioButton(selected = room.status == status, onClick = {
+                            RadioButton(
+                                selected = room.status == status, 
+                                onClick = {
                                 roomViewModel.updateRoomStatus(room.id, status)
-                                selectedRoom = null
+                                selectedRoomForStatus = null
                             })
-                            Text(
-                                text = status.name, modifier = Modifier.padding(start = 8.dp)
-                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = status.name, modifier = Modifier.padding(start = 8.dp))
                         }
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { selectedRoom = null }) {
+                TextButton(onClick = { selectedRoomForStatus = null }) {
                     Text("Cancel")
                 }
             })

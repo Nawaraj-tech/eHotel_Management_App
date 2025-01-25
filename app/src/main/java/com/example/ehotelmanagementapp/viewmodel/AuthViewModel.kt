@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.ehotelmanagementapp.model.UserRole
 import com.example.ehotelmanagementapp.utils.ValidationUtils
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.UserInfo
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +22,12 @@ sealed class AuthState {
     data class Success(val userId: String, val role: UserRole = UserRole.CUSTOMER) : AuthState()
 }
 
+data class UserInformation(
+    val id: String,
+    val name: String,
+    val email: String
+)
+
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val auth: FirebaseAuth,
@@ -30,11 +37,41 @@ class AuthViewModel @Inject constructor(
     private val _authState = MutableStateFlow<AuthState>(AuthState.Initial)
     val authState: StateFlow<AuthState> = _authState
 
+    private var _currentUser = MutableStateFlow<UserInformation?>(null)
+    val currentUser: StateFlow<UserInformation?> = _currentUser
+
     init {
         // Check current auth state when ViewModel is created
-        auth.currentUser?.let { user ->
-            checkUserRole(user.uid)
+        fetchCurrentUser()
+    }
+
+    fun fetchCurrentUser() {
+        viewModelScope.launch {
+            try {
+                val user = auth.currentUser
+                if (user != null) {
+                    val userDoc = firestore.collection("users")
+                        .document(user.uid)
+                        .get()
+                        .await()
+                    val userName = userDoc.getString("name")
+                    Log.d("AuthViewModel", "Retrieved user name: $userName")
+                    if (userName != null) {
+                        _currentUser.value = UserInformation(
+                            id = user.uid,
+                            name = userDoc.getString("name") ?: "",
+                            email = user.email ?: ""
+                        )
+                    }
+
+                }
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Error fetching user info", e)
+            }
         }
+    }
+    fun getCurrentUser(): UserInformation? {
+        return _currentUser.value
     }
 
     private fun checkUserRole(userId: String) {
@@ -173,7 +210,7 @@ class AuthViewModel @Inject constructor(
             if (_authState.value !is AuthState.Success) {
                 checkUserRole(user.uid)
             }
-        }?: run {
+        } ?: run {
             _authState.value = AuthState.Initial
         }
     }
@@ -194,4 +231,10 @@ class AuthViewModel @Inject constructor(
             }
         }
     }
+
+    data class UserInfo(
+        val id: String,
+        val name: String,
+        val email: String
+    )
 }
